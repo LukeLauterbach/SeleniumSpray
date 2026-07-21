@@ -13,7 +13,7 @@ dependencies = [
     "azure-mgmt-subscription",
     "azure-mgmt-resource==25.0.0",
     "azure-mgmt-compute",
-    "azure-mgmt-network",
+    "azure-mgmt-network==30.2.0",
     "boto3",
     "requests",
     "rich",
