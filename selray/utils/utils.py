@@ -1,4 +1,5 @@
 import sys
+from collections import Counter
 from . import rotate_ip_if_needed
 from datetime import datetime
 import os
@@ -151,15 +152,27 @@ def prepare_usernames(usernames=None, domain="", domain_after=False, domain_befo
     return usernames
 
 
+def unique_username_successes(results):
+    """Return successes only when their username has exactly one success."""
+    successes = [
+        entry for entry in results
+        if entry and entry.get('RESULT') == 'SUCCESS'
+    ]
+    success_counts = Counter(entry.get('USERNAME') for entry in successes)
+    return [
+        entry for entry in successes
+        if success_counts[entry.get('USERNAME')] == 1
+    ]
+
+
 def print_ending(results):
     print(f"\nPassword spraying completed at {datetime.now().strftime('%m/%d/%Y %H:%M')}")
 
-    success_count = sum(1 for entry in results if entry and entry.get('RESULT') == 'SUCCESS')
-    if success_count:
-        print(f"Valid Credentials Found: {success_count}")
-        for credential in results:
-            if credential and credential.get('RESULT') == 'SUCCESS':
-                print(f"{credential['USERNAME']} - {credential['PASSWORD']}")
+    valid = unique_username_successes(results)
+    if valid:
+        print(f"Valid Credentials Found: {len(valid)}")
+        for credential in valid:
+            print(f"{credential['USERNAME']} - {credential['PASSWORD']}")
     else:
         print("No valid credentials found.")
 

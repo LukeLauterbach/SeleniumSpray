@@ -2,9 +2,10 @@ from collections import defaultdict
 from collections import Counter
 from datetime import datetime, timedelta
 import pause
+from . import utils
 
 def perform_stuffing(spray_config, args):
-    from .spray import launch_spray_processes
+    from .spray import launch_spray_processes, remove_locked_users
     results = []
 
     credentials = split_username_password(args.usernames)
@@ -22,16 +23,17 @@ def perform_stuffing(spray_config, args):
         attempt_results = launch_spray_processes(spray_config, user_chunks)
         results.extend(attempt_results)
         print_attempt_summary(stuffing_attempt, num_stuffing_attempts, len(credentials_for_attempt), attempt_results)
+        credentials = remove_locked_users(credentials, attempt_results)
 
         # Check to see if the process is at the end. If not, wait the specified time.
         if stuffing_attempt < num_stuffing_attempts:
             print(f"Stuffing attempt {stuffing_attempt} of {num_stuffing_attempts} complete. Waiting until "
                   f"{next_start_time.strftime('%H:%M')} to start next stuffing attempt.")
-            if any(entry['RESULT'] == 'SUCCESS' for entry in results):
+            valid = utils.unique_username_successes(results)
+            if valid:
                 print("Valid Credentials Found:")
-                for entry in results:
-                    if entry['RESULT'] == 'SUCCESS':
-                        print(f"{entry['USERNAME']} - {entry['PASSWORD']}")
+                for entry in valid:
+                    print(f"{entry['USERNAME']} - {entry['PASSWORD']}")
                 print()
             pause.until(next_start_time)
 

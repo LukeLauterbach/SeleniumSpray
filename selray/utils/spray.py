@@ -40,13 +40,18 @@ def main(args, spray_config):
 
 
 def remove_locked_users(usernames, results):
-    locked_users = {entry["USERNAME"] for entry in results if entry["RESULT"] == "LOCKED"}
+    excluded_users = {
+        entry["USERNAME"]
+        for entry in results
+        if entry["RESULT"] in {"LOCKED", "PASSWORDLESS"}
+    }
 
-    for username in locked_users:
-        if username in usernames:
-            usernames.remove(username)
-
-    return usernames
+    return [
+        entry for entry in usernames
+        if (
+            entry.get("USERNAME") if isinstance(entry, dict) else entry
+        ) not in excluded_users
+    ]
 
 
 def split_usernames(args):
@@ -145,7 +150,7 @@ def collect_results(queue, processes, total_credentials):
 
 
 def report_valid_credentials(results):
-    valid = [entry for entry in results if entry['RESULT'] == 'SUCCESS']
+    valid = utils.unique_username_successes(results)
     if valid:
         print("Valid Credentials Found:")
         for entry in valid:
